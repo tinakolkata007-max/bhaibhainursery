@@ -1,31 +1,50 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Leaf, LogOut, LayoutDashboard, Package, Settings, ShoppingBag, FolderTree } from 'lucide-react';
+import {
+  Leaf, LogOut, LayoutDashboard, Package, Settings, ShoppingBag, FolderTree,
+  Boxes, Users, Ticket, Truck, Star, FileText, BarChart3
+} from 'lucide-react';
 import { useAdmin } from '@/context/AdminContext';
 import ProductsManager from './ProductsManager';
 import CategoriesManager from './CategoriesManager';
 import SettingsManager from './SettingsManager';
 import OrdersManager from './OrdersManager';
+import InventoryManager from './InventoryManager';
+import CouponsManager from './CouponsManager';
+import ReviewsManager from './ReviewsManager';
+import PlantCareManager from './PlantCareManager';
+import ReportsManager from './ReportsManager';
+import DeliverySettingsManager from './DeliverySettingsManager';
+import CustomersManager from './CustomersManager';
 import { supabase } from '@/lib/supabase';
 
 export default function AdminDashboard() {
   const { session, isAdmin, loading, signOut } = useAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const [stats, setStats] = useState({ total: 0, active: 0, outOfStock: 0, orders: 0 });
+  const [stats, setStats] = useState({
+    total: 0, active: 0, outOfStock: 0, lowStock: 0,
+    orders: 0, pendingOrders: 0, categories: 0, delivered: 0,
+  });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
 
   const loadStats = useCallback(async () => {
-    const [prodRes, orderRes] = await Promise.all([
-      supabase.from('products').select('id, active, stock'),
-      supabase.from('orders').select('id').order('created_at', { ascending: false }).limit(100),
+    const [prodRes, orderRes, catRes] = await Promise.all([
+      supabase.from('products').select('id, active, stock, low_stock_threshold'),
+      supabase.from('orders').select('id, status'),
+      supabase.from('categories').select('id'),
     ]);
     const products = prodRes.data || [];
+    const orders = orderRes.data || [];
     setStats({
       total: products.length,
       active: products.filter((p: any) => p.active).length,
       outOfStock: products.filter((p: any) => p.stock <= 0).length,
-      orders: orderRes.data?.length || 0,
+      lowStock: products.filter((p: any) => p.stock > 0 && p.stock <= (p.low_stock_threshold || 5)).length,
+      orders: orders.length,
+      pendingOrders: orders.filter((o: any) => o.status === 'pending_confirmation' || o.status === 'pending').length,
+      categories: catRes.data?.length || 0,
+      delivered: orders.filter((o: any) => o.status === 'delivered').length,
     });
   }, []);
 
@@ -66,6 +85,13 @@ export default function AdminDashboard() {
     { id: 'products', label: 'Products', icon: Package },
     { id: 'categories', label: 'Categories', icon: FolderTree },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
+    { id: 'inventory', label: 'Inventory', icon: Boxes },
+    { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'coupons', label: 'Coupons', icon: Ticket },
+    { id: 'delivery', label: 'Delivery', icon: Truck },
+    { id: 'reviews', label: 'Reviews', icon: Star },
+    { id: 'plant-care', label: 'Plant Care', icon: FileText },
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -83,7 +109,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 lg:flex-col flex flex-row overflow-x-auto lg:overflow-x-hidden">
+        <nav className="flex-1 px-3 py-4 space-y-1 lg:flex-col flex flex-row overflow-x-auto lg:overflow-x-hidden lg:overflow-y-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -121,8 +147,12 @@ export default function AdminDashboard() {
                 {[
                   { label: 'Total Products', value: stats.total, color: 'bg-primary-50 text-primary-700' },
                   { label: 'Active Products', value: stats.active, color: 'bg-success-50 text-success-700' },
+                  { label: 'Low Stock', value: stats.lowStock, color: 'bg-accent-50 text-accent-700' },
                   { label: 'Out of Stock', value: stats.outOfStock, color: 'bg-error-50 text-error-600' },
                   { label: 'Total Orders', value: stats.orders, color: 'bg-secondary-50 text-secondary-700' },
+                  { label: 'Pending Orders', value: stats.pendingOrders, color: 'bg-accent-50 text-accent-700' },
+                  { label: 'Delivered', value: stats.delivered, color: 'bg-success-50 text-success-700' },
+                  { label: 'Categories', value: stats.categories, color: 'bg-primary-50 text-primary-700' },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-white rounded-2xl p-5 border border-gray-100">
                     <div className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${stat.color} mb-3`}>
@@ -143,16 +173,18 @@ export default function AdminDashboard() {
                       <div key={order.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
                         <div>
                           <p className="text-sm font-medium text-gray-900">{order.customer_name}</p>
-                          <p className="text-xs text-gray-400">{order.customer_phone}</p>
+                          <p className="text-xs text-gray-400">{order.order_ref || order.customer_phone}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-bold text-gray-900">₹{order.total}</p>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            order.status === 'pending' ? 'bg-accent-100 text-accent-700' :
+                            order.status === 'pending_confirmation' || order.status === 'pending' ? 'bg-accent-100 text-accent-700' :
                             order.status === 'confirmed' ? 'bg-success-100 text-success-700' :
+                            order.status === 'delivered' ? 'bg-primary-100 text-primary-700' :
+                            order.status === 'cancelled' ? 'bg-error-100 text-error-600' :
                             'bg-gray-100 text-gray-600'
                           }`}>
-                            {order.status}
+                            {order.status.replace(/_/g, ' ')}
                           </span>
                         </div>
                       </div>
@@ -166,6 +198,13 @@ export default function AdminDashboard() {
           {activeTab === 'products' && <ProductsManager onStatsRefresh={loadStats} />}
           {activeTab === 'categories' && <CategoriesManager />}
           {activeTab === 'orders' && <OrdersManager />}
+          {activeTab === 'inventory' && <InventoryManager />}
+          {activeTab === 'customers' && <CustomersManager />}
+          {activeTab === 'coupons' && <CouponsManager />}
+          {activeTab === 'delivery' && <DeliverySettingsManager />}
+          {activeTab === 'reviews' && <ReviewsManager />}
+          {activeTab === 'plant-care' && <PlantCareManager />}
+          {activeTab === 'reports' && <ReportsManager />}
           {activeTab === 'settings' && <SettingsManager />}
         </div>
       </main>

@@ -29,9 +29,22 @@ export default function Footer() {
               <li><Link to="/shop" className="hover:text-secondary-400 transition-colors">All Plants</Link></li>
               <li><Link to="/shop?category=indoor-plants" className="hover:text-secondary-400 transition-colors">Indoor Plants</Link></li>
               <li><Link to="/shop?category=flowering-plants" className="hover:text-secondary-400 transition-colors">Flowering Plants</Link></li>
-              <li><Link to="/shop?category=fruit-plants" className="hover:text-secondary-400 transition-colors">Fruit Plants</Link></li>
+              <li><Link to="/plant-care" className="hover:text-secondary-400 transition-colors">Plant Care Guide</Link></li>
+              <li><Link to="/offers" className="hover:text-secondary-400 transition-colors">Offers & Discounts</Link></li>
               <li><Link to="/about" className="hover:text-secondary-400 transition-colors">About Us</Link></li>
               <li><Link to="/contact" className="hover:text-secondary-400 transition-colors">Contact</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Customer Service</h4>
+            <ul className="space-y-2.5 text-sm">
+              <li><Link to="/order-enquiry" className="hover:text-secondary-400 transition-colors">Order Enquiry</Link></li>
+              <li><Link to="/wishlist" className="hover:text-secondary-400 transition-colors">My Wishlist</Link></li>
+              <li><Link to="/privacy-policy" className="hover:text-secondary-400 transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-secondary-400 transition-colors">Terms & Conditions</Link></li>
+              <li><Link to="/shipping-policy" className="hover:text-secondary-400 transition-colors">Shipping & Delivery</Link></li>
+              <li><Link to="/returns" className="hover:text-secondary-400 transition-colors">Return & Refund Policy</Link></li>
             </ul>
           </div>
 
@@ -51,11 +64,10 @@ export default function Footer() {
                 <span>{settings?.contact_email}</span>
               </li>
             </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Follow Us</h4>
-            <div className="flex gap-3">
+            {settings?.business_hours && (
+              <p className="text-xs text-primary-300 mt-3">{settings.business_hours}</p>
+            )}
+            <div className="flex gap-3 mt-3">
               {settings?.instagram_url && (
                 <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-primary-800 hover:bg-primary-700 flex items-center justify-center transition-colors">
                   <Instagram className="w-5 h-5" />
@@ -67,9 +79,6 @@ export default function Footer() {
                 </a>
               )}
             </div>
-            <p className="text-xs text-primary-300 mt-4">
-              Order via WhatsApp for a personal touch. No online payment needed.
-            </p>
           </div>
         </div>
 

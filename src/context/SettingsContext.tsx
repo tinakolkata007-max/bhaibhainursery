@@ -25,6 +25,18 @@ const DEFAULT_SETTINGS: SiteSettings = {
   address: '123 Garden Road, Green City, India 560001',
   instagram_url: '',
   facebook_url: '',
+  announcement_bar: null,
+  business_hours: 'Mon - Sat: 9 AM - 7 PM',
+  free_delivery_threshold: 0,
+  min_order_amount: 0,
+  cod_enabled: true,
+  bank_transfer_enabled: false,
+  payment_info: null,
+  privacy_policy: null,
+  terms_conditions: null,
+  shipping_policy: null,
+  return_policy: null,
+  store_open: true,
 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
